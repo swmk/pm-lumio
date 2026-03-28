@@ -354,7 +354,7 @@ input,select,textarea{font:inherit}
       <header class="app-header">
         <span style="width:40px"></span>
         <span class="header-title product-name">AI Companion</span>
-        <button class="btn-icon" id="home-alert-demo" aria-label="Demo: trigger alert">⚡</button>
+        <span style="width:40px"></span>
       </header>
       <main class="screen-body">
         <div class="home-greeting">
@@ -387,7 +387,7 @@ input,select,textarea{font:inherit}
       </header>
       <main class="chat-body" id="chat-messages" aria-live="polite" aria-label="Conversation"></main>
       <footer class="chat-footer">
-        <button class="demo-btn" id="demo-next">Demo: Next Message →</button>
+        <button class="demo-btn" id="demo-next">Next →</button>
         <div class="chat-input-row">
           <input type="text" id="chat-input" placeholder="Type a message..." aria-label="Message input" autocomplete="off">
           <button class="btn-send" id="send-btn" aria-label="Send">➤</button>
@@ -801,7 +801,7 @@ function deliverAI(text, memoryPill = false) {
     // Check if last script line → schedule alert
     if (AppState.chat.scriptIndex >= CONFIG.chatScript.length) {
       AppState.chat.pendingAlert = true;
-      $('demo-next').textContent = 'Demo: Trigger Alert →';
+      $('demo-next').textContent = 'Next →';
     }
   }, 1100);
 }
@@ -1072,7 +1072,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Home → chat
   $('start-checkin').onclick = () => navigateTo('screen-chat');
   $('view-mood-report').onclick = () => navigateTo('screen-mood');
-  $('home-alert-demo').onclick = () => showAlert(false);
+
 
   // Chat
   $('send-btn').onclick = () => {
