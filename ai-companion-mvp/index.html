@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="page-title">AI Companion — Interactive Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ── */
+:root {
+  --color-primary:#4A6FA5; --color-primary-light:#EBF0F8;
+  --color-accent:#6DBF9E;  --color-danger:#E57373;
+  --color-warning:#F5A623; --color-bg:#FAFAF8;
+  --color-surface:#FFFFFF; --color-border:#E8E8E4;
+  --color-text-primary:#1C2B3A; --color-text-secondary:#6B7280;
+  --font-heading:'Lora',Georgia,serif; --font-body:'Inter',system-ui,sans-serif;
+  --text-xs:12px; --text-sm:14px; --text-base:16px;
+  --text-lg:18px; --text-xl:22px; --text-2xl:28px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px;
+  --sp-6:24px; --sp-8:32px; --sp-12:48px;
+  --frame-w:390px; --frame-h:844px; --frame-r:48px;
+  --radius-sm:8px; --radius-md:16px; --radius-full:999px;
+  --shadow-card:0 2px 12px rgba(0,0,0,.08);
+  --shadow-modal:0 8px 40px rgba(0,0,0,.32);
+  --t:.22s ease; --header-h:56px; --tab-h:64px; --status-h:20px;
+}
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  min-height:100vh;display:flex;align-items:center;justify-content:center}
+img,svg{display:block;max-width:100%}
+button{cursor:pointer;font:inherit;background:none;border:none}
+ul{list-style:none}
+a{color:inherit;text-decoration:none}
+[hidden]{display:none!important}
+input,select,textarea{font:inherit}
+
+/* ── PHONE FRAME ── */
+.phone-frame{
+  width:var(--frame-w);height:var(--frame-h);border-radius:var(--frame-r);
+  background:var(--color-bg);overflow:hidden;position:relative;
+  display:flex;flex-direction:column;
+  box-shadow:0 30px 80px rgba(0,0,0,.4),0 0 0 8px #1C2B3A,0 0 0 12px #2e4460}
+@media(max-width:480px){
+  body{background:var(--color-bg);align-items:flex-start;min-height:100dvh}
+  .phone-frame{width:100vw;height:100dvh;border-radius:0;box-shadow:none}}
+
+/* ── STATUS BAR ── */
+.status-bar{
+  height:var(--status-h);background:var(--color-surface);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--sp-4);font-size:11px;font-weight:600;
+  color:var(--color-text-primary);flex-shrink:0;border-bottom:1px solid var(--color-border)}
+
+/* ── SCREEN CONTAINER ── */
+.screen-container{flex:1;position:relative;overflow:hidden}
+
+/* ── SCREENS ── */
+.screen{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  background:var(--color-bg);transform:translateX(100%);visibility:hidden;
+  transition:transform .28s cubic-bezier(.4,0,.2,1)}
+.screen.active{transform:translateX(0);visibility:visible}
+
+/* ── HEADER ── */
+.app-header{
+  height:var(--header-h);display:flex;align-items:center;
+  justify-content:space-between;padding:0 var(--sp-3);
+  background:var(--color-surface);border-bottom:1px solid var(--color-border);
+  flex-shrink:0;gap:var(--sp-2)}
+.header-title{font-weight:600;font-size:var(--text-base);color:var(--color-text-primary);flex:1;text-align:center}
+.btn-icon{
+  min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;
+  font-size:var(--text-lg);color:var(--color-text-primary);border-radius:var(--radius-sm);
+  transition:background var(--t)}
+.btn-icon:hover{background:var(--color-primary-light)}
+.btn-icon:focus-visible{outline:3px solid var(--color-primary);outline-offset:2px}
+
+/* ── SCREEN BODY ── */
+.screen-body{flex:1;overflow-y:auto;padding:var(--sp-4);-webkit-overflow-scrolling:touch}
+
+/* ── TAB BAR ── */
+.tab-bar{
+  height:var(--tab-h);background:var(--color-surface);
+  border-top:1px solid var(--color-border);display:flex;flex-shrink:0}
+.tab-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2px;color:var(--color-text-secondary);
+  border-top:2px solid transparent;transition:color var(--t),border-color var(--t);
+  font-size:var(--text-xs);font-weight:500}
+.tab-item:focus-visible{outline:3px solid var(--color-primary);outline-offset:-3px}
+.tab-item.active{color:var(--color-primary);border-top-color:var(--color-primary)}
+.tab-icon{font-size:22px;line-height:1}
+
+/* ── CARDS / BUTTONS ── */
+.card{background:var(--color-surface);border-radius:var(--radius-md);padding:var(--sp-4);
+  box-shadow:var(--shadow-card);margin-bottom:var(--sp-4)}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);
+  padding:var(--sp-3) var(--sp-6);border-radius:var(--radius-sm);
+  font-weight:600;font-size:var(--text-sm);border:2px solid transparent;
+  transition:background var(--t),opacity var(--t)}
+.btn-primary{background:var(--color-primary);color:#fff;border-color:var(--color-primary)}
+.btn-primary:hover{background:#3a5a8c;border-color:#3a5a8c}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-outline{background:transparent;color:var(--color-primary);border-color:var(--color-primary)}
+.btn-outline:hover{background:var(--color-primary-light)}
+.btn:focus-visible{outline:3px solid var(--color-primary);outline-offset:3px}
+.full-width{width:100%}
+.link-btn{background:none;border:none;color:var(--color-primary);font-size:var(--text-sm);
+  font-weight:500;cursor:pointer}
+.link-btn:focus-visible{outline:3px solid var(--color-primary);outline-offset:2px;border-radius:2px}
+.section-label{font-size:var(--text-xs);font-weight:600;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--color-text-secondary);padding:var(--sp-4) 0 var(--sp-2)}
+
+/* ── HOME SCREEN ── */
+.home-greeting{padding:var(--sp-6) 0 var(--sp-4)}
+.home-greeting h1{font-family:var(--font-heading);font-size:var(--text-xl);
+  color:var(--color-text-primary);font-weight:700;line-height:1.25;margin-bottom:var(--sp-1)}
+.home-date{font-size:var(--text-sm);color:var(--color-text-secondary)}
+.checkin-card h2{font-family:var(--font-heading);font-size:var(--text-lg);
+  color:var(--color-text-primary);margin:var(--sp-2) 0 var(--sp-4);line-height:1.3}
+.checkin-label{font-size:var(--text-xs);font-weight:600;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--color-accent)}
+.section-label-row{display:flex;align-items:center;justify-content:space-between;
+  padding:var(--sp-2) 0}
+.section-label-row .section-label{padding:0;margin:0}
+.sparkline{display:flex;align-items:flex-end;gap:3px;height:44px;padding:var(--sp-2) 0}
+.sparkline-bar{flex:1;background:var(--color-primary);border-radius:2px 2px 0 0;
+  opacity:.65;min-height:3px;transition:height .4s ease}
+.sparkline-labels{display:flex;gap:3px;margin-top:var(--sp-1)}
+.sparkline-lbl{flex:1;text-align:center;font-size:9px;color:var(--color-text-secondary)}
+.memory-teaser{display:flex;align-items:flex-start;gap:var(--sp-2);
+  background:var(--color-primary-light);border-radius:var(--radius-sm);
+  padding:var(--sp-3);margin-top:var(--sp-2)}
+.memory-teaser-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.memory-teaser p{font-size:var(--text-sm);color:var(--color-primary);font-style:italic;margin:0}
+
+/* ── CHAT SCREEN ── */
+.chat-body{padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-2)}
+.chat-footer{flex-shrink:0;background:var(--color-surface);border-top:1px solid var(--color-border);padding:var(--sp-2) var(--sp-3)}
+.demo-btn{font-size:var(--text-xs);color:var(--color-primary);font-weight:500;
+  padding:var(--sp-1) var(--sp-3);background:var(--color-primary-light);
+  border-radius:var(--radius-full);margin-bottom:var(--sp-2);display:block;width:100%;text-align:center}
+.demo-btn:hover{background:#d5e3f5}
+.chat-input-row{display:flex;gap:var(--sp-2);margin-bottom:var(--sp-2)}
+.chat-input-row input{
+  flex:1;padding:var(--sp-3) var(--sp-4);border:1.5px solid var(--color-border);
+  border-radius:var(--radius-full);font-size:var(--text-sm);background:var(--color-bg);
+  color:var(--color-text-primary);transition:border-color var(--t)}
+.chat-input-row input:focus{outline:none;border-color:var(--color-primary)}
+.btn-send{
+  width:40px;height:40px;border-radius:50%;background:var(--color-primary);
+  color:#fff;display:flex;align-items:center;justify-content:center;font-size:var(--text-base);flex-shrink:0}
+.btn-send:hover{background:#3a5a8c}
+.voice-switch-btn{font-size:var(--text-sm);color:var(--color-text-secondary);
+  width:100%;text-align:center;padding:var(--sp-1) 0}
+.voice-switch-btn:hover{color:var(--color-primary)}
+.chat-message{display:flex;animation:bubbleIn .25s ease forwards}
+.chat-message.ai{justify-content:flex-start}
+.chat-message.user{justify-content:flex-end}
+.bubble{max-width:82%;padding:var(--sp-3) var(--sp-4);border-radius:var(--radius-md);
+  font-size:var(--text-sm);line-height:1.55}
+.bubble.ai{background:var(--color-surface);color:var(--color-text-primary);
+  border-bottom-left-radius:4px;box-shadow:var(--shadow-card)}
+.bubble.user{background:var(--color-primary);color:#fff;border-bottom-right-radius:4px}
+.bubble.taboo{background:#fff3cd;color:#856404;border-left:3px solid var(--color-warning)}
+.memory-pill{display:inline-flex;align-items:center;gap:4px;background:var(--color-primary-light);
+  color:var(--color-primary);font-size:var(--text-xs);font-weight:500;
+  padding:2px var(--sp-2);border-radius:var(--radius-full);margin-bottom:var(--sp-2)}
+.memory-pill:hover{background:#d5e3f5}
+.memory-tooltip{font-size:var(--text-xs);color:var(--color-text-secondary);
+  background:var(--color-surface);border:1px solid var(--color-border);
+  padding:var(--sp-2) var(--sp-3);border-radius:var(--radius-sm);
+  box-shadow:var(--shadow-card);margin-bottom:var(--sp-2)}
+.typing-indicator{display:flex;align-items:center;gap:4px;
+  padding:var(--sp-3) var(--sp-4);background:var(--color-surface);
+  border-radius:var(--radius-md);border-bottom-left-radius:4px;box-shadow:var(--shadow-card)}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--color-text-secondary);
+  animation:typingPulse 1.2s infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+
+/* ── VOICE SCREEN ── */
+.voice-body{display:flex;flex-direction:column;align-items:center;padding:var(--sp-6)}
+.mic-wrap{position:relative;width:130px;height:130px;display:flex;
+  align-items:center;justify-content:center;margin:var(--sp-8) auto var(--sp-6)}
+.mic-ring{position:absolute;width:100%;height:100%;border-radius:50%;
+  background:rgba(74,111,165,.15);animation:micPulse 2s infinite}
+.mic-ring.r2{animation-delay:1s}
+.mic-circle{width:88px;height:88px;background:var(--color-primary);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;z-index:1;font-size:36px}
+.voice-status{font-size:var(--text-lg);color:var(--color-text-secondary);
+  margin-bottom:var(--sp-6);font-weight:500}
+.transcript-panel{width:100%;background:var(--color-surface);border-radius:var(--radius-md);
+  padding:var(--sp-4);box-shadow:var(--shadow-card);margin-bottom:var(--sp-6);
+  max-height:220px;overflow-y:auto}
+.transcript-panel-label{font-size:var(--text-xs);font-weight:600;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--color-text-secondary);margin-bottom:var(--sp-3)}
+.transcript-line{font-size:var(--text-sm);color:var(--color-text-primary);
+  margin-bottom:var(--sp-2);line-height:1.5}
+.transcript-line strong{color:var(--color-primary)}
+
+/* ── MOOD SCREEN ── */
+.screen-subtitle{font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--sp-4)}
+.mood-chart-card{padding:var(--sp-4) var(--sp-4) var(--sp-2)}
+.mood-chart-label{font-size:var(--text-xs);font-weight:600;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--color-text-secondary);margin-bottom:var(--sp-3)}
+.mood-chart{display:flex;align-items:flex-end;gap:var(--sp-2);height:110px;padding-bottom:var(--sp-1)}
+.mood-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.mood-bar{width:100%;border-radius:3px 3px 0 0;background:var(--color-primary);
+  transition:height .7s cubic-bezier(.4,0,.2,1);min-height:4px}
+.mood-bar-day{font-size:9px;color:var(--color-text-secondary);margin-top:4px;text-align:center}
+.mood-tags{display:flex;flex-wrap:wrap;gap:var(--sp-2);margin-bottom:var(--sp-4)}
+.mood-tag{background:var(--color-primary-light);color:var(--color-primary);
+  font-size:var(--text-xs);font-weight:500;padding:var(--sp-1) var(--sp-3);border-radius:var(--radius-full)}
+.insight-card{background:var(--color-surface)}
+.insight-header{display:flex;align-items:center;gap:var(--sp-2);margin-bottom:var(--sp-2)}
+.insight-lbl{font-size:var(--text-sm);font-weight:600;color:var(--color-text-primary)}
+.insight-text{font-size:var(--text-sm);color:var(--color-text-secondary);font-style:italic;line-height:1.6}
+.burnout-row{display:flex;align-items:center;gap:var(--sp-3);padding:var(--sp-4);
+  background:var(--color-surface);border-radius:var(--radius-sm);
+  box-shadow:var(--shadow-card);margin-bottom:var(--sp-4)}
+.burnout-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.burnout-text{font-size:var(--text-sm);font-weight:500;color:var(--color-text-primary);flex:1}
+
+/* ── SETTINGS SCREEN ── */
+.settings-card{padding:0;overflow:hidden}
+.settings-row{display:flex;align-items:center;gap:var(--sp-3);
+  padding:var(--sp-4);width:100%;text-align:left;
+  border-bottom:1px solid var(--color-border)}
+.settings-row:last-child{border-bottom:none}
+.settings-row.tappable{cursor:pointer;transition:background var(--t)}
+.settings-row.tappable:hover,.settings-row.tappable:active{background:var(--color-primary-light)}
+.settings-row:focus-visible{outline:3px solid var(--color-primary);outline-offset:-3px}
+.sr-icon{font-size:20px;flex-shrink:0}
+.sr-content{flex:1;min-width:0}
+.sr-title{font-size:var(--text-sm);font-weight:500;color:var(--color-text-primary);margin:0}
+.sr-sub{font-size:var(--text-xs);color:var(--color-text-secondary);margin:0}
+.sr-badge{font-size:11px}
+.sr-badge.red{color:var(--color-danger)}
+.sr-badge.green{color:var(--color-accent)}
+.sr-chevron{color:var(--color-text-secondary);font-size:20px}
+.sr-safety{color:var(--color-danger);font-weight:700}
+.safety-section-lbl{color:var(--color-danger)!important}
+
+/* ── EMERGENCY SCREEN ── */
+.info-card{background:var(--color-primary-light);border-radius:var(--radius-md);
+  padding:var(--sp-4);display:flex;gap:var(--sp-3);margin-bottom:var(--sp-4)}
+.info-card-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.info-card p{font-size:var(--text-sm);color:var(--color-primary);margin:0;line-height:1.55}
+.form-field{margin-bottom:var(--sp-4)}
+.field-label{display:block;font-size:var(--text-sm);font-weight:500;
+  color:var(--color-text-primary);margin-bottom:var(--sp-2)}
+.form-field input,.form-field select{
+  width:100%;padding:var(--sp-3) var(--sp-4);border:1.5px solid var(--color-border);
+  border-radius:var(--radius-sm);font-size:var(--text-sm);color:var(--color-text-primary);
+  background:var(--color-surface);transition:border-color var(--t);appearance:none}
+.form-field input:focus,.form-field select:focus{outline:none;border-color:var(--color-primary)}
+.form-field input.invalid,.form-field select.invalid{border-color:var(--color-danger)}
+.field-error{display:block;font-size:var(--text-xs);color:var(--color-danger);
+  margin-top:var(--sp-1);min-height:16px}
+.radio-group{display:flex;flex-direction:column;gap:var(--sp-2)}
+.radio-label{display:flex;align-items:center;gap:var(--sp-2);font-size:var(--text-sm);
+  color:var(--color-text-primary);cursor:pointer}
+.radio-label input[type=radio]{accent-color:var(--color-primary);width:16px;height:16px}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-4)}
+.toggle-row-label{font-size:var(--text-sm);font-weight:500;color:var(--color-text-primary)}
+.toggle-sw{position:relative;width:44px;height:26px;flex-shrink:0}
+.toggle-sw input{opacity:0;width:0;height:0}
+.toggle-track{position:absolute;inset:0;background:var(--color-border);
+  border-radius:var(--radius-full);cursor:pointer;transition:background var(--t)}
+.toggle-sw input:checked+.toggle-track{background:var(--color-primary)}
+.toggle-track::before{content:'';position:absolute;width:20px;height:20px;
+  left:3px;top:3px;background:#fff;border-radius:50%;transition:transform var(--t)}
+.toggle-sw input:checked+.toggle-track::before{transform:translateX(18px)}
+.save-banner{padding:var(--sp-3) var(--sp-4);background:#d4edda;color:#155724;
+  border-radius:var(--radius-sm);font-size:var(--text-sm);font-weight:500;
+  margin-bottom:var(--sp-4);animation:slideDown .3s ease}
+.emergency-actions{display:flex;flex-direction:column;gap:var(--sp-3);padding-top:var(--sp-2)}
+.saved-contact{background:var(--color-primary-light);border-radius:var(--radius-md);
+  padding:var(--sp-4);margin-bottom:var(--sp-4)}
+.saved-row{display:flex;justify-content:space-between;align-items:center;
+  padding:var(--sp-2) 0;border-bottom:1px solid rgba(74,111,165,.15);font-size:var(--text-sm)}
+.saved-row:last-child{border-bottom:none}
+.saved-row-lbl{color:var(--color-text-secondary);font-weight:500}
+.saved-row-val{color:var(--color-primary);font-weight:500}
+
+/* ── ALERT MODAL ── */
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.72);
+  display:flex;align-items:center;padding:var(--sp-6);z-index:200;animation:fadeIn .2s ease}
+.modal-card{background:var(--color-surface);border-radius:var(--radius-md);
+  width:100%;max-height:88%;overflow-y:auto;box-shadow:var(--shadow-modal);
+  animation:modalIn .25s ease}
+.modal-header{padding:var(--sp-4) var(--sp-6);font-weight:700;
+  font-size:var(--text-lg);color:#fff;background:var(--color-danger);
+  border-radius:var(--radius-md) var(--radius-md) 0 0}
+.modal-header.test{background:var(--color-warning);color:#7a4f00}
+.modal-body{padding:var(--sp-6)}
+.modal-body p{font-size:var(--text-sm);color:var(--color-text-primary);margin-bottom:var(--sp-4)}
+.modal-divider{border:none;border-top:1px solid var(--color-border);margin:var(--sp-4) 0}
+.modal-contact-label{font-weight:600;color:var(--color-text-primary)}
+.sms-bubble{background:#e8f5e9;border-radius:var(--radius-sm);padding:var(--sp-3) var(--sp-4);
+  font-size:var(--text-sm);color:#1b5e20;font-style:italic;margin-top:var(--sp-2)}
+.modal-actions{display:flex;flex-direction:column;gap:var(--sp-3);margin-top:var(--sp-4)}
+.no-contact-note{color:var(--color-danger)!important;font-weight:500}
+
+/* ── TOAST ── */
+.toast-container{position:absolute;bottom:calc(var(--tab-h) + var(--sp-4));
+  left:var(--sp-4);right:var(--sp-4);z-index:300;
+  display:flex;flex-direction:column;gap:var(--sp-2);pointer-events:none}
+.toast{padding:var(--sp-3) var(--sp-4);border-radius:var(--radius-sm);
+  font-size:var(--text-sm);font-weight:500;pointer-events:auto;
+  animation:toastIn .3s ease forwards}
+.toast.success{background:var(--color-accent);color:#1a3d2b}
+.toast.info{background:var(--color-primary);color:#fff}
+.toast.warning{background:var(--color-warning);color:#7a4f00}
+.toast.error{background:var(--color-danger);color:#fff}
+.toast.out{animation:toastOut .3s ease forwards}
+
+/* ── KEYFRAMES ── */
+@keyframes bubbleIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes typingPulse{0%,60%,100%{opacity:.3;transform:scale(.8)}30%{opacity:1;transform:scale(1)}}
+@keyframes micPulse{0%{transform:scale(1);opacity:.5}70%,100%{transform:scale(1.45);opacity:0}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes toastIn{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+@keyframes toastOut{from{transform:none;opacity:1}to{transform:translateY(12px);opacity:0}}
+@keyframes slideDown{from{transform:translateY(-6px);opacity:0}to{transform:none;opacity:1}}
+@keyframes moodBarGrow{from{height:0}to{height:var(--target-h)}}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div class="phone-frame" id="phone-frame">
+  <!-- Status bar -->
+  <div class="status-bar" aria-hidden="true">
+    <span id="status-time">9:41</span>
+    <span>📶 WiFi 🔋</span>
+  </div>
+
+  <!-- Screen container -->
+  <div class="screen-container" id="screen-container">
+
+    <!-- ═══ HOME ═══ -->
+    <section id="screen-home" class="screen" aria-label="Home">
+      <header class="app-header">
+        <span style="width:40px"></span>
+        <span class="header-title product-name">AI Companion</span>
+        <button class="btn-icon" id="home-alert-demo" aria-label="Demo: trigger alert">⚡</button>
+      </header>
+      <main class="screen-body">
+        <div class="home-greeting">
+          <h1 id="greeting-text">Good morning, Alex 👋</h1>
+          <p class="home-date" id="greeting-date"></p>
+        </div>
+        <div class="card checkin-card">
+          <p class="checkin-label">Daily Check-in</p>
+          <h2>How are you feeling today?</h2>
+          <button class="btn btn-primary full-width" id="start-checkin">Start Check-in →</button>
+        </div>
+        <div class="section-label-row">
+          <span class="section-label" style="padding:0">This Week's Mood</span>
+          <button class="link-btn" id="view-mood-report">View full report</button>
+        </div>
+        <div class="card" id="mood-sparkline" style="padding:var(--sp-3) var(--sp-4) var(--sp-2)"></div>
+        <div class="memory-teaser">
+          <span class="memory-teaser-icon">🧠</span>
+          <p>"You mentioned feeling overwhelmed on Thu."</p>
+        </div>
+      </main>
+    </section>
+
+    <!-- ═══ CHAT ═══ -->
+    <section id="screen-chat" class="screen" aria-label="Chat">
+      <header class="app-header">
+        <button class="btn-icon" data-back aria-label="Go back">←</button>
+        <span class="header-title">Companion</span>
+        <button class="btn-icon" id="voice-toggle-btn" aria-label="Switch to voice mode">🎙️</button>
+      </header>
+      <main class="chat-body" id="chat-messages" aria-live="polite" aria-label="Conversation"></main>
+      <footer class="chat-footer">
+        <button class="demo-btn" id="demo-next">Demo: Next Message →</button>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" placeholder="Type a message..." aria-label="Message input" autocomplete="off">
+          <button class="btn-send" id="send-btn" aria-label="Send">➤</button>
+        </div>
+        <button class="voice-switch-btn" id="voice-switch-btn">🎙️ Switch to Voice</button>
+      </footer>
+    </section>
+
+    <!-- ═══ VOICE ═══ -->
+    <section id="screen-chat-voice" class="screen" aria-label="Voice mode">
+      <header class="app-header">
+        <button class="btn-icon" id="voice-back" aria-label="Back to text">← Text</button>
+        <span class="header-title">Voice Mode</span>
+        <button class="btn-icon" id="voice-end-top" aria-label="End session">🔇</button>
+      </header>
+      <main class="voice-body">
+        <div class="mic-wrap">
+          <div class="mic-ring"></div>
+          <div class="mic-ring r2"></div>
+          <div class="mic-circle">🎙️</div>
+        </div>
+        <p class="voice-status" id="voice-status">Listening...</p>
+        <div class="transcript-panel">
+          <p class="transcript-panel-label">Transcript</p>
+          <div id="transcript-content"></div>
+        </div>
+        <button class="btn btn-outline full-width" id="end-voice-session">End Voice Session</button>
+      </main>
+    </section>
+
+    <!-- ═══ MOOD ═══ -->
+    <section id="screen-mood" class="screen" aria-label="Mood Profile">
+      <header class="app-header">
+        <span style="width:40px"></span>
+        <span class="header-title">📊 Mood Profile</span>
+        <span style="width:40px"></span>
+      </header>
+      <main class="screen-body">
+        <p class="screen-subtitle">This week</p>
+        <div class="card mood-chart-card">
+          <p class="mood-chart-label">Mood Trend</p>
+          <div class="mood-chart" id="mood-chart"></div>
+        </div>
+        <p class="section-label" style="padding:0 0 var(--sp-2)">Mood Tags This Week</p>
+        <div class="mood-tags" id="mood-tags"></div>
+        <div class="card insight-card">
+          <div class="insight-header">
+            <span>📝</span>
+            <span class="insight-lbl">Weekly Insight</span>
+          </div>
+          <p class="insight-text" id="insight-text"></p>
+        </div>
+        <div class="burnout-row" id="burnout-row"></div>
+        <button class="btn btn-primary full-width" id="mood-to-chat">Talk to Companion →</button>
+      </main>
+    </section>
+
+    <!-- ═══ SETTINGS ═══ -->
+    <section id="screen-settings" class="screen" aria-label="Settings">
+      <header class="app-header">
+        <span style="width:40px"></span>
+        <span class="header-title">⚙️ Settings</span>
+        <span style="width:40px"></span>
+      </header>
+      <main class="screen-body">
+        <p class="section-label">Account</p>
+        <div class="card settings-card">
+          <div class="settings-row">
+            <span class="sr-icon">👤</span>
+            <div class="sr-content">
+              <p class="sr-title" id="settings-name">Alex</p>
+              <p class="sr-sub" id="settings-email">alex@example.com</p>
+            </div>
+          </div>
+        </div>
+        <p class="section-label safety-section-lbl" style="color:var(--color-danger)">Safety</p>
+        <div class="card settings-card">
+          <button class="settings-row tappable" id="goto-emergency" aria-label="Configure emergency contact">
+            <span class="sr-icon">🚨</span>
+            <div class="sr-content">
+              <p class="sr-title">Emergency Contact</p>
+              <p class="sr-sub" id="emergency-status-text">Not configured</p>
+            </div>
+            <span class="sr-badge red" id="emergency-badge" aria-hidden="true">●</span>
+            <span class="sr-chevron">›</span>
+          </button>
+          <button class="settings-row tappable coming-soon">
+            <span class="sr-icon">🔔</span>
+            <div class="sr-content"><p class="sr-title">Alert Settings</p></div>
+            <span class="sr-chevron">›</span>
+          </button>
+        </div>
+        <p class="section-label">Preferences</p>
+        <div class="card settings-card">
+          <button class="settings-row tappable coming-soon">
+            <span class="sr-icon">🚫</span>
+            <div class="sr-content"><p class="sr-title">Blocked Topics</p></div>
+            <span class="sr-chevron">›</span>
+          </button>
+          <button class="settings-row tappable coming-soon">
+            <span class="sr-icon">🔒</span>
+            <div class="sr-content"><p class="sr-title">Privacy &amp; Data</p></div>
+            <span class="sr-chevron">›</span>
+          </button>
+        </div>
+      </main>
+    </section>
+
+    <!-- ═══ EMERGENCY CONTACT ═══ -->
+    <section id="screen-emergency" class="screen" aria-label="Emergency Contact Setup">
+      <header class="app-header">
+        <button class="btn-icon" data-back aria-label="Back to settings">←</button>
+        <span class="header-title">🚨 Emergency Contact</span>
+        <span style="width:40px"></span>
+      </header>
+      <main class="screen-body">
+        <div class="info-card">
+          <span class="info-card-icon">ℹ️</span>
+          <p>If your companion detects signs of serious distress, this person will receive a message.</p>
+        </div>
+
+        <!-- Form view -->
+        <div id="ec-form-wrap">
+          <form id="emergency-form" novalidate>
+            <p class="section-label" style="padding:0 0 var(--sp-3)">Contact Details</p>
+            <div class="form-field">
+              <label class="field-label" for="ec-name">Full Name <span aria-hidden="true">*</span></label>
+              <input type="text" id="ec-name" placeholder="e.g. Sarah Lee" autocomplete="name" aria-required="true" aria-describedby="ec-name-err">
+              <span class="field-error" id="ec-name-err" role="alert"></span>
+            </div>
+            <div class="form-field">
+              <label class="field-label" for="ec-relationship">Relationship <span aria-hidden="true">*</span></label>
+              <select id="ec-relationship" aria-required="true" aria-describedby="ec-rel-err">
+                <option value="">Select...</option>
+                <option>Partner</option><option>Parent</option><option>Friend</option>
+                <option>Sibling</option><option>Therapist</option><option>Other</option>
+              </select>
+              <span class="field-error" id="ec-rel-err" role="alert"></span>
+            </div>
+            <div class="form-field">
+              <p class="field-label">Contact Method <span aria-hidden="true">*</span></p>
+              <div class="radio-group" role="radiogroup" aria-describedby="ec-method-err">
+                <label class="radio-label"><input type="radio" name="ec-method" value="sms" id="ec-sms"> Mobile number (SMS)</label>
+                <label class="radio-label"><input type="radio" name="ec-method" value="email" id="ec-email"> Email address</label>
+              </div>
+              <span class="field-error" id="ec-method-err" role="alert"></span>
+            </div>
+            <div class="form-field" id="ec-contact-field">
+              <label class="field-label" for="ec-contact-val" id="ec-contact-lbl">Mobile number</label>
+              <input type="tel" id="ec-contact-val" placeholder="e.g. +1 555 000 0000" aria-describedby="ec-contact-err">
+              <span class="field-error" id="ec-contact-err" role="alert"></span>
+            </div>
+            <p class="section-label" style="padding:0 0 var(--sp-3)">Alert Threshold</p>
+            <p class="field-label" style="margin-bottom:var(--sp-2)">Send alert when:</p>
+            <div class="radio-group" style="margin-bottom:var(--sp-4)">
+              <label class="radio-label"><input type="radio" name="ec-threshold" value="manual"> I ask the AI to</label>
+              <label class="radio-label"><input type="radio" name="ec-threshold" value="auto" checked> AI detects high risk (recommended)</label>
+              <label class="radio-label"><input type="radio" name="ec-threshold" value="both"> Both</label>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-row-label">Notify me too when alert is sent</span>
+              <label class="toggle-sw"><input type="checkbox" id="ec-notify-self" checked><span class="toggle-track"></span></label>
+            </div>
+          </form>
+        </div>
+
+        <!-- Saved view -->
+        <div id="ec-saved-view" hidden></div>
+
+        <!-- Save confirmation banner -->
+        <div id="ec-save-banner" class="save-banner" hidden></div>
+
+        <!-- Action buttons -->
+        <div class="emergency-actions">
+          <button class="btn btn-primary full-width" id="save-ec-btn">Save Emergency Contact</button>
+          <button class="btn btn-outline full-width" id="test-alert-btn" disabled aria-disabled="true">Send a Test Alert</button>
+        </div>
+      </main>
+    </section>
+
+  </div><!-- /screen-container -->
+
+  <!-- Tab bar -->
+  <nav class="tab-bar" id="tab-bar" aria-label="Main navigation">
+    <button class="tab-item" data-tab="screen-home">
+      <span class="tab-icon">🏠</span>
+      <span>Home</span>
+    </button>
+    <button class="tab-item" data-tab="screen-chat">
+      <span class="tab-icon">💬</span>
+      <span>Chat</span>
+    </button>
+    <button class="tab-item" data-tab="screen-mood">
+      <span class="tab-icon">📊</span>
+      <span>Mood</span>
+    </button>
+    <button class="tab-item" data-tab="screen-settings">
+      <span class="tab-icon">⚙️</span>
+      <span>Settings</span>
+    </button>
+  </nav>
+
+  <!-- Alert modal -->
+  <div id="modal-alert" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title" hidden>
+    <div class="modal-card">
+      <div class="modal-header" id="modal-header-bar">
+        <span id="modal-title">🚨 Alert Detected</span>
+      </div>
+      <div class="modal-body">
+        <p>Your companion has noticed some concerning patterns in your recent conversations.</p>
+        <hr class="modal-divider">
+        <div id="modal-contact-section"></div>
+        <hr class="modal-divider">
+        <p>What would you like to do?</p>
+        <div class="modal-actions">
+          <button class="btn btn-outline full-width" id="modal-dismiss">I'm okay — Cancel alert</button>
+          <button class="btn btn-primary full-width" id="modal-to-chat">Talk to my companion →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+</div><!-- /phone-frame -->
+
+<script>
+/* ══ CONFIG ══ */
+const CONFIG = {
+  productName: '[ProductName]',
+  tagline: 'Your daily emotional companion.',
+  userName: 'Alex',
+  userEmail: 'alex@example.com',
+  moodData: {
+    week: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+    scores: [3, 2, 3, 4, 4, 3, 5],
+    tags: ['Stressed','Tired','Focused','Overwhelmed','Drained'],
+    insight: 'Your mood dipped mid-week, likely tied to your Tue/Wed workload. Friday showed signs of recovery. Watch for burnout signals early next week.',
+    burnoutRisk: 'moderate'
+  },
+  chatScript: [
+    "Hey Alex! Last time you mentioned feeling stressed about your deadline. How are things going today?",
+    "I hear you. It sounds like work has been really weighing on you this week. How's your sleep been?",
+    "That's really common when stress builds up. I'm noticing your mood has been consistently lower this week. Would it help to talk about what's driving it?"
+  ],
+  userDemoMessages: [
+    "Yeah, still pretty rough honestly.",
+    "Not great. I've been waking up at 3am."
+  ],
+  tabooKeywords: ['quit', 'give up', 'hopeless', "can't go on"],
+  alertDelay: 3000,
+  alertSmsTemplate: "Hi {{contact}}, {{name}}'s wellness companion has flagged that {{name}} may need support right now. Please check in."
+};
+
+/* ══ APP STATE ══ */
+const AppState = {
+  currentScreen: 'screen-home',
+  previousScreen: null,
+  emergencyContact: { configured: false, name: '', relationship: '', method: '', value: '', threshold: 'auto', notifySelf: true },
+  chat: { initialized: false, scriptIndex: 0, demoIndex: 0, pendingAlert: false },
+  alertPending: null
+};
+
+const BURNOUT = {
+  low:      { color: '#6DBF9E', label: 'Low Risk' },
+  moderate: { color: '#F5A623', label: 'Moderate — keep an eye on this' },
+  high:     { color: '#E57373', label: 'High — your companion has flagged this' }
+};
+
+const VOICE_LINES = [
+  { s: 'You', t: "Yeah, I just feel really worn out lately..." },
+  { s: 'AI',  t: "That makes total sense. You've had a lot going on." },
+  { s: 'You', t: "Work has been non-stop and I can't seem to switch off." },
+  { s: 'AI',  t: "I hear you. It's hard to find that boundary between work and rest." }
+];
+
+/* ══ UTILS ══ */
+const $ = id => document.getElementById(id);
+function esc(t) { const d = document.createElement('div'); d.appendChild(document.createTextNode(t)); return d.innerHTML; }
+
+/* ══ NAVIGATION ══ */
+function navigateTo(screenId, dir = 'forward') {
+  if (screenId === AppState.currentScreen) return;
+  const from = document.getElementById(AppState.currentScreen);
+  const to = document.getElementById(screenId);
+  if (!from || !to) return;
+
+  AppState.previousScreen = AppState.currentScreen;
+  AppState.currentScreen = screenId;
+
+  // Position target off-screen
+  to.style.transition = 'none';
+  to.style.transform = dir === 'back' ? 'translateX(-100%)' : 'translateX(100%)';
+  to.style.visibility = 'visible';
+  to.offsetHeight; // reflow
+
+  // Animate
+  to.style.transition = '';
+  to.style.transform = 'translateX(0)';
+  from.style.transform = dir === 'back' ? 'translateX(100%)' : 'translateX(-100%)';
+
+  setTimeout(() => {
+    from.style.visibility = 'hidden';
+  }, 280);
+
+  updateTabBar(screenId);
+  onScreenEnter(screenId);
+}
+
+function goBack() {
+  navigateTo(AppState.previousScreen || 'screen-home', 'back');
+}
+
+function updateTabBar(screenId) {
+  const tabMap = { 'screen-home': 'screen-home', 'screen-chat': 'screen-chat',
+    'screen-chat-voice': 'screen-chat', 'screen-mood': 'screen-mood',
+    'screen-settings': 'screen-settings', 'screen-emergency': 'screen-settings' };
+  const active = tabMap[screenId] || screenId;
+  document.querySelectorAll('.tab-item').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === active));
+}
+
+function onScreenEnter(id) {
+  if (id === 'screen-home') initHome();
+  if (id === 'screen-chat') initChat();
+  if (id === 'screen-chat-voice') startVoice();
+  if (id === 'screen-mood') renderMood();
+  if (id === 'screen-settings') refreshSettings();
+}
+
+/* ══ TOAST ══ */
+function showToast(msg, type = 'info', duration = 3000) {
+  const c = $('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  t.setAttribute('role', 'status');
+  c.appendChild(t);
+  if (duration > 0) {
+    setTimeout(() => {
+      t.classList.add('out');
+      setTimeout(() => t.remove(), 300);
+    }, duration);
+  } else {
+    const close = document.createElement('button');
+    close.textContent = ' ✕';
+    close.style.cssText = 'background:none;border:none;color:inherit;cursor:pointer;margin-left:8px';
+    close.onclick = () => { t.classList.add('out'); setTimeout(() => t.remove(), 300); };
+    t.appendChild(close);
+  }
+}
+
+/* ══ HOME ══ */
+function initHome() {
+  // Greeting
+  const h = new Date().getHours();
+  const g = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  $('greeting-text').textContent = `${g}, ${CONFIG.userName} 👋`;
+  const d = new Date();
+  $('greeting-date').textContent = d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+
+  // Sparkline
+  const { week, scores } = CONFIG.moodData;
+  const mx = Math.max(...scores);
+  $('mood-sparkline').innerHTML =
+    `<div class="sparkline">${scores.map((s,i) => `<div class="sparkline-bar" style="height:${Math.round(s/mx*100)}%" title="${week[i]}: ${s}/5"></div>`).join('')}</div>` +
+    `<div class="sparkline-labels">${week.map(d => `<span class="sparkline-lbl">${d}</span>`).join('')}</div>`;
+}
+
+/* ══ CHAT ══ */
+function initChat() {
+  if (AppState.chat.initialized) return;
+  AppState.chat.initialized = true;
+  deliverAI(CONFIG.chatScript[0], true);
+  AppState.chat.scriptIndex = 1;
+}
+
+function addMsg(role, text, opts = {}) {
+  const wrap = document.createElement('div');
+  wrap.className = `chat-message ${role}`;
+  let html = '';
+  if (opts.memoryPill) html += `<div><button class="memory-pill" id="mem-pill">🧠 Remembering your last session</button><div class="memory-tooltip" id="mem-tip" hidden>Your companion recalls key themes from past conversations.</div></div>`;
+  if (opts.taboo) {
+    html += `<div class="bubble taboo">I'm not able to go there, but I'm still here for you. Want to talk about something else?</div>`;
+  } else {
+    html += `<div class="bubble ${role}">${esc(text)}</div>`;
+  }
+  wrap.innerHTML = html;
+  $('chat-messages').appendChild(wrap);
+  $('chat-messages').scrollTop = 9999;
+  if (opts.memoryPill) {
+    $('mem-pill').onclick = () => { $('mem-tip').hidden = !$('mem-tip').hidden; };
+  }
+}
+
+function showTyping() {
+  const w = document.createElement('div');
+  w.className = 'chat-message ai'; w.id = 'typing-wrap';
+  w.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  $('chat-messages').appendChild(w);
+  $('chat-messages').scrollTop = 9999;
+}
+function hideTyping() { const e = $('typing-wrap'); if (e) e.remove(); }
+
+function deliverAI(text, memoryPill = false) {
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    addMsg('ai', text, { memoryPill });
+    // Check if last script line → schedule alert
+    if (AppState.chat.scriptIndex >= CONFIG.chatScript.length) {
+      AppState.chat.pendingAlert = true;
+      $('demo-next').textContent = 'Demo: Trigger Alert →';
+    }
+  }, 1100);
+}
+
+function sendUserMsg(text) {
+  if (!text.trim()) return;
+  const lower = text.toLowerCase();
+  if (CONFIG.tabooKeywords.some(k => lower.includes(k))) {
+    addMsg('user', text);
+    setTimeout(() => addMsg('ai', '', { taboo: true }), 600);
+    return;
+  }
+  addMsg('user', text);
+  // Advance script
+  if (AppState.chat.scriptIndex < CONFIG.chatScript.length) {
+    const reply = CONFIG.chatScript[AppState.chat.scriptIndex++];
+    deliverAI(reply);
+  }
+}
+
+/* ══ VOICE ══ */
+let voiceTimers = [];
+function clearVoiceTimers() { voiceTimers.forEach(t => { clearTimeout(t); clearInterval(t); }); voiceTimers = []; }
+
+function startVoice() {
+  clearVoiceTimers();
+  $('transcript-content').innerHTML = '';
+  $('voice-status').textContent = 'Listening...';
+  let idx = 0;
+  function nextLine() {
+    if (idx >= VOICE_LINES.length) { $('voice-status').textContent = 'Session complete'; return; }
+    const line = VOICE_LINES[idx++];
+    const p = document.createElement('p');
+    p.className = 'transcript-line';
+    $('transcript-content').appendChild(p);
+    let ci = 0;
+    const iv = setInterval(() => {
+      p.innerHTML = `<strong>${line.s}:</strong> ${esc(line.t.slice(0, ++ci))}`;
+      if (ci >= line.t.length) { clearInterval(iv); voiceTimers.push(setTimeout(nextLine, 900)); }
+    }, 28);
+    voiceTimers.push(iv);
+  }
+  voiceTimers.push(setTimeout(nextLine, 2000));
+}
+
+function endVoice() {
+  clearVoiceTimers();
+  const lines = Array.from($('transcript-content').querySelectorAll('.transcript-line'));
+  const msgs = lines.map(p => {
+    const strong = p.querySelector('strong');
+    return { role: strong && strong.textContent.startsWith('You') ? 'user' : 'ai', text: p.textContent.replace(/^(You|AI):\s*/, '') };
+  });
+  navigateTo('screen-chat', 'back');
+  setTimeout(() => msgs.forEach(m => addMsg(m.role, m.text)), 350);
+}
+
+/* ══ MOOD ══ */
+function renderMood() {
+  const { week, scores, tags, insight, burnoutRisk } = CONFIG.moodData;
+  const chart = $('mood-chart');
+  chart.innerHTML = '';
+  scores.forEach((s, i) => {
+    const col = document.createElement('div');
+    col.className = 'mood-bar-col';
+    const bar = document.createElement('div');
+    bar.className = 'mood-bar';
+    bar.title = `${week[i]}: ${s}/5`;
+    bar.style.height = '0';
+    const lbl = document.createElement('div');
+    lbl.className = 'mood-bar-day';
+    lbl.textContent = week[i];
+    col.append(bar, lbl);
+    chart.appendChild(col);
+    setTimeout(() => { bar.style.height = `${Math.round(s / 5 * 100)}%`; }, 80 + i * 60);
+  });
+  $('mood-tags').innerHTML = tags.map(t => `<span class="mood-tag">${esc(t)}</span>`).join('');
+  $('insight-text').textContent = insight;
+  const b = BURNOUT[burnoutRisk] || BURNOUT.moderate;
+  $('burnout-row').innerHTML = `<div class="burnout-dot" style="background:${b.color}"></div><span class="burnout-text">⚠️ Burnout Risk: ${b.label}</span>`;
+}
+
+/* ══ SETTINGS ══ */
+function refreshSettings() {
+  $('settings-name').textContent = CONFIG.userName;
+  $('settings-email').textContent = CONFIG.userEmail;
+  const ec = AppState.emergencyContact;
+  const badge = $('emergency-badge');
+  const statusText = $('emergency-status-text');
+  if (ec.configured) {
+    statusText.textContent = `${ec.name} (${ec.relationship}) — Configured ✓`;
+    badge.className = 'sr-badge green';
+    badge.textContent = '✓';
+  } else {
+    statusText.textContent = 'Not configured';
+    badge.className = 'sr-badge red';
+    badge.textContent = '●';
+  }
+}
+
+/* ══ EMERGENCY CONTACT ══ */
+function initEmergency() {
+  // Method radio → update contact input label/type
+  document.querySelectorAll('input[name="ec-method"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const isSms = r.value === 'sms';
+      $('ec-contact-lbl').textContent = isSms ? 'Mobile number' : 'Email address';
+      const inp = $('ec-contact-val');
+      inp.type = isSms ? 'tel' : 'email';
+      inp.placeholder = isSms ? '+1 555 000 0000' : 'name@example.com';
+    });
+  });
+}
+
+function validateEC() {
+  let ok = true;
+  const clr = (inputId, errId) => { $(inputId)?.classList.remove('invalid'); $(errId).textContent = ''; };
+  const err = (inputId, errId, msg) => { $(inputId)?.classList.add('invalid'); $(errId).textContent = msg; ok = false; };
+
+  clr('ec-name','ec-name-err'); clr('ec-relationship','ec-rel-err');
+  clr('ec-contact-val','ec-contact-err'); $('ec-method-err').textContent = '';
+
+  const name = $('ec-name').value.trim();
+  if (!name || name.length < 2) err('ec-name','ec-name-err',"Please enter your contact's full name");
+
+  const rel = $('ec-relationship').value;
+  if (!rel) err('ec-relationship','ec-rel-err','Please select a relationship');
+
+  const method = document.querySelector('input[name="ec-method"]:checked')?.value;
+  if (!method) { $('ec-method-err').textContent = 'Please choose SMS or email'; ok = false; }
+
+  const val = $('ec-contact-val').value.trim();
+  if (method === 'sms' && (!val || !/^[\+\d\s\-\(\)]{7,}$/.test(val)))
+    err('ec-contact-val','ec-contact-err','Enter a valid mobile number');
+  if (method === 'email' && (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)))
+    err('ec-contact-val','ec-contact-err','Enter a valid email address');
+
+  return ok;
+}
+
+function saveEC() {
+  if (!validateEC()) return;
+  const ec = AppState.emergencyContact;
+  ec.configured = true;
+  ec.name        = $('ec-name').value.trim();
+  ec.relationship = $('ec-relationship').value;
+  ec.method      = document.querySelector('input[name="ec-method"]:checked').value;
+  ec.value       = $('ec-contact-val').value.trim();
+  ec.threshold   = document.querySelector('input[name="ec-threshold"]:checked').value;
+  ec.notifySelf  = $('ec-notify-self').checked;
+
+  // Show saved view
+  $('ec-form-wrap').hidden = true;
+  const sv = $('ec-saved-view');
+  sv.hidden = false;
+  sv.innerHTML = `
+    <div class="saved-contact">
+      <div class="saved-row"><span class="saved-row-lbl">Name</span><span class="saved-row-val">${esc(ec.name)}</span></div>
+      <div class="saved-row"><span class="saved-row-lbl">Relationship</span><span class="saved-row-val">${esc(ec.relationship)}</span></div>
+      <div class="saved-row"><span class="saved-row-lbl">Contact</span><span class="saved-row-val">${ec.method === 'sms' ? 'SMS' : 'Email'}: ${esc(ec.value)}</span></div>
+      <div class="saved-row"><span class="saved-row-lbl">Alert trigger</span><span class="saved-row-val">${esc(ec.threshold)}</span></div>
+    </div>
+    <button class="btn btn-outline full-width" id="edit-ec-btn" style="margin-bottom:var(--sp-4)">Edit Contact</button>`;
+
+  $('edit-ec-btn').onclick = () => {
+    $('ec-form-wrap').hidden = false;
+    sv.hidden = true;
+    $('ec-save-banner').hidden = true;
+    $('ec-name').value = ec.name;
+    $('ec-relationship').value = ec.relationship;
+    document.querySelector(`input[name="ec-method"][value="${ec.method}"]`).checked = true;
+    document.querySelector(`input[name="ec-method"][value="${ec.method}"]`).dispatchEvent(new Event('change'));
+    $('ec-contact-val').value = ec.value;
+    document.querySelector(`input[name="ec-threshold"][value="${ec.threshold}"]`).checked = true;
+    $('ec-notify-self').checked = ec.notifySelf;
+  };
+
+  const banner = $('ec-save-banner');
+  banner.textContent = `✅ Emergency contact saved. ${ec.name} will be notified if we detect serious distress.`;
+  banner.hidden = false;
+
+  const testBtn = $('test-alert-btn');
+  testBtn.disabled = false;
+  testBtn.removeAttribute('aria-disabled');
+}
+
+/* ══ ALERT MODAL ══ */
+function showAlert(testMode = false) {
+  const modal = $('modal-alert');
+  const hdr = $('modal-header-bar');
+  const ec = AppState.emergencyContact;
+
+  if (testMode) {
+    hdr.textContent = '📋 Test Alert — No message was actually sent';
+    hdr.className = 'modal-header test';
+  } else {
+    hdr.textContent = '🚨 Alert Detected';
+    hdr.className = 'modal-header';
+  }
+
+  const cs = $('modal-contact-section');
+  if (ec.configured) {
+    const sms = CONFIG.alertSmsTemplate.replace('{{contact}}', ec.name).replace(/{{name}}/g, CONFIG.userName);
+    cs.innerHTML = `
+      <p><span class="modal-contact-label">📲 Notifying:</span></p>
+      <p>${esc(ec.name)} (${esc(ec.relationship)})<br>via ${ec.method === 'sms' ? 'SMS' : 'email'}</p>
+      <p style="margin-bottom:var(--sp-1)"><strong>Message sent:</strong></p>
+      <div class="sms-bubble">"${esc(sms)}"</div>`;
+  } else {
+    cs.innerHTML = `<p class="no-contact-note">⚠️ No emergency contact configured.</p>
+      <button class="btn btn-outline" id="modal-setup-btn" style="margin-top:var(--sp-3)">Set one up →</button>`;
+    setTimeout(() => {
+      $('modal-setup-btn')?.addEventListener('click', () => { dismissAlert(); navigateTo('screen-emergency','forward'); });
+    }, 0);
+  }
+
+  modal.hidden = false;
+  modal.querySelector('button')?.focus();
+}
+
+function dismissAlert() {
+  $('modal-alert').hidden = true;
+  AppState.chat.pendingAlert = false;
+  // Add reassurance bubble in chat
+  if (['screen-chat','screen-chat-voice'].includes(AppState.previousScreen) || AppState.currentScreen === 'screen-chat') {
+    setTimeout(() => addMsg('ai', "Glad you're okay. I'm here if you need me."), 200);
+  }
+}
+
+/* ══ STATUS BAR CLOCK ══ */
+function updateClock() {
+  const n = new Date();
+  $('status-time').textContent = n.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+}
+
+/* ══ BOOT ══ */
+document.addEventListener('DOMContentLoaded', () => {
+  // Apply product name
+  document.querySelectorAll('.product-name').forEach(el => el.textContent = CONFIG.productName);
+  $('page-title').textContent = `${CONFIG.productName} — Interactive Prototype`;
+
+  // Clock
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  // Initial screen — set active without animation
+  const home = $('screen-home');
+  home.style.transform = 'translateX(0)';
+  home.style.visibility = 'visible';
+  home.classList.add('active');
+  updateTabBar('screen-home');
+  initHome();
+
+  // Tab bar
+  document.querySelectorAll('.tab-item').forEach(tab => {
+    tab.addEventListener('click', () => navigateTo(tab.dataset.tab));
+  });
+
+  // Back buttons
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-back]')) goBack();
+  });
+
+  // Coming soon rows
+  document.addEventListener('click', e => {
+    if (e.target.closest('.coming-soon')) showToast('Coming soon', 'info', 3000);
+  });
+
+  // Home → chat
+  $('start-checkin').onclick = () => navigateTo('screen-chat');
+  $('view-mood-report').onclick = () => navigateTo('screen-mood');
+  $('home-alert-demo').onclick = () => showAlert(false);
+
+  // Chat
+  $('send-btn').onclick = () => {
+    const inp = $('chat-input');
+    const t = inp.value.trim();
+    inp.value = '';
+    if (t) sendUserMsg(t);
+  };
+  $('chat-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') $('send-btn').click();
+  });
+
+  $('demo-next').onclick = () => {
+    if (AppState.chat.pendingAlert) { showAlert(false); return; }
+    const t = CONFIG.userDemoMessages[AppState.chat.demoIndex++ % CONFIG.userDemoMessages.length];
+    sendUserMsg(t);
+  };
+
+  $('voice-toggle-btn').onclick = () => navigateTo('screen-chat-voice');
+  $('voice-switch-btn').onclick = () => navigateTo('screen-chat-voice');
+  $('voice-back').onclick = () => navigateTo('screen-chat', 'back');
+  $('voice-end-top').onclick = endVoice;
+  $('end-voice-session').onclick = endVoice;
+
+  // Mood → chat
+  $('mood-to-chat').onclick = () => navigateTo('screen-chat');
+
+  // Settings → emergency
+  $('goto-emergency').onclick = () => navigateTo('screen-emergency');
+
+  // Emergency form
+  initEmergency();
+  $('save-ec-btn').onclick = saveEC;
+  $('test-alert-btn').onclick = () => showAlert(true);
+  $('emergency-form').addEventListener('submit', e => { e.preventDefault(); saveEC(); });
+
+  // Modal
+  $('modal-dismiss').onclick = () => dismissAlert();
+  $('modal-to-chat').onclick = () => { dismissAlert(); navigateTo('screen-chat'); };
+});
+</script>
+</body>
+</html>
